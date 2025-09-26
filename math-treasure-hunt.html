@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>乘法运算寻宝游戏</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        treasure: {
+                            gold: '#FFD700',
+                            brown: '#8B4513',
+                            sand: '#F4A460',
+                            green: '#228B22',
+                            blue: '#1E90FF'
+                        }
+                    },
+                    fontFamily: {
+                        adventure: ['"Comic Sans MS"', '"Marker Felt"', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            }
+            .animate-float {
+                animation: float 3s ease-in-out infinite;
+            }
+            .animate-pulse-slow {
+                animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+            .animate-spin-slow {
+                animation: spin 8s linear infinite;
+            }
+            .bg-map {
+                background-image: url('https://picsum.photos/id/1015/1200/800');
+                background-size: cover;
+                background-position: center;
+            }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-adventure text-gray-800 overflow-x-hidden">
+    <!-- 游戏标题 -->
+    <header class="bg-treasure-brown text-white py-6 px-4 shadow-lg">
+        <div class="container mx-auto text-center">
+            <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold text-shadow animate-pulse-slow">
+                <i class="fa fa-map-signs mr-3"></i>乘法寻宝大冒险
+            </h1>
+            <p class="mt-2 text-xl">解开乘法谜题，找到传说中的宝藏！</p>
+        </div>
+    </header>
+
+    <!-- 游戏区域 -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- 游戏状态显示 -->
+        <div class="mb-8 bg-white rounded-xl shadow-md p-6 transition-all duration-500">
+            <div class="flex flex-wrap justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold text-treasure-brown">
+                        <i class="fa fa-compass mr-2"></i>探险进度
+                    </h2>
+                    <p id="status-text" class="mt-2 text-lg">准备开始探险...</p>
+                </div>
+                <div class="mt-4 md:mt-0">
+                    <button id="start-btn" class="bg-treasure-green hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300">
+                        <i class="fa fa-play mr-2"></i>开始探险
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 进度条 -->
+            <div class="mt-6 h-5 bg-gray-200 rounded-full overflow-hidden">
+                <div id="progress-bar" class="h-full bg-treasure-gold w-0 transition-all duration-1000 ease-out"></div>
+            </div>
+            
+            <!-- 步骤指示器 -->
+            <div class="flex justify-between mt-2 text-sm text-gray-500">
+                <span>起点</span>
+                <span>线索1</span>
+                <span>线索2</span>
+                <span>线索3</span>
+                <span>宝藏</span>
+            </div>
+        </div>
+
+        <!-- 游戏画面 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- 左侧：地图区域 -->
+            <div class="lg:col-span-2">
+                <div id="map-container" class="bg-map rounded-xl shadow-lg h-[500px] relative overflow-hidden transition-all duration-700">
+                    <!-- 初始状态 -->
+                    <div id="start-screen" class="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center text-white p-6 text-center">
+                        <i class="fa fa-map-o text-8xl mb-6 text-treasure-gold animate-float"></i>
+                        <h2 class="text-3xl font-bold mb-4">欢迎来到乘法寻宝</h2>
+                        <p class="text-xl mb-6">解决一系列乘法问题，找到隐藏的宝藏！</p>
+                        <p class="text-lg">点击"开始探险"按钮开启你的旅程</p>
+                    </div>
+
+                    <!-- 各个场景将通过JS动态显示 -->
+                    <div id="scene-1" class="absolute inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center text-white p-6 text-center hidden">
+                        <i class="fa fa-tree text-8xl mb-6 text-treasure-green animate-float"></i>
+                        <h3 class="text-2xl font-bold mb-4">神秘森林</h3>
+                        <p class="text-xl mb-6">你在森林中发现了一个古老的石碑，上面刻着一道乘法题...</p>
+                        <div id="question-1" class="text-3xl font-bold mb-6"></div>
+                        <input type="number" id="answer-1" class="text-gray-800 text-xl p-3 rounded-lg w-40 text-center mb-4" placeholder="你的答案">
+                        <button id="submit-1" class="bg-treasure-brown hover:bg-brown-700 text-white font-bold py-2 px-6 rounded-full transition-all duration-300">
+                            提交答案
+                        </button>
+                    </div>
+
+                    <div id="scene-2" class="absolute inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center text-white p-6 text-center hidden">
+                        <i class="fa fa-university text-8xl mb-6 text-treasure-sand animate-float"></i>
+                        <h3 class="text-2xl font-bold mb-4">古老城堡</h3>
+                        <p class="text-xl mb-6">通过森林后，你来到一座城堡，大门上有一道乘法谜题...</p>
+                        <div id="question-2" class="text-3xl font-bold mb-6"></div>
+                        <input type="number" id="answer-2" class="text-gray-800 text-xl p-3 rounded-lg w-40 text-center mb-4" placeholder="你的答案">
+                        <button id="submit-2" class="bg-treasure-brown hover:bg-brown-700 text-white font-bold py-2 px-6 rounded-full transition-all duration-300">
+                            提交答案
+                        </button>
+                    </div>
+
+                    <div id="scene-3" class="absolute inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center text-white p-6 text-center hidden">
+                        <i class="fa fa-cave text-8xl mb-6 text-gray-500 animate-float"></i>
+                        <h3 class="text-2xl font-bold mb-4">神秘洞穴</h3>
+                        <p class="text-xl mb-6">城堡的密道通向一个洞穴，石壁上有最后一道谜题...</p>
+                        <div id="question-3" class="text-3xl font-bold mb-6"></div>
+                        <input type="number" id="answer-3" class="text-gray-800 text-xl p-3 rounded-lg w-40 text-center mb-4" placeholder="你的答案">
+                        <button id="submit-3" class="bg-treasure-brown hover:bg-brown-700 text-white font-bold py-2 px-6 rounded-full transition-all duration-300">
+                            提交答案
+                        </button>
+                    </div>
+
+                    <div id="treasure-scene" class="absolute inset-0 bg-black bg-opacity-40 flex flex-col items-center justify-center text-white p-6 text-center hidden">
+                        <i class="fa fa-diamond text-8xl mb-6 text-treasure-gold animate-spin-slow"></i>
+                        <h3 class="text-3xl font-bold mb-4 text-treasure-gold">恭喜你！</h3>
+                        <p class="text-xl mb-6">你成功解开了所有谜题，找到了传说中的宝藏！</p>
+                        <button id="restart-btn" class="bg-treasure-green hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 mt-6">
+                            <i class="fa fa-refresh mr-2"></i>再玩一次
+                        </button>
+                    </div>
+
+                    <div id="failure-scene" class="absolute inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center text-white p-6 text-center hidden">
+                        <i class="fa fa-exclamation-triangle text-8xl mb-6 text-red-500 animate-pulse"></i>
+                        <h3 class="text-3xl font-bold mb-4">答错了！</h3>
+                        <p class="text-xl mb-6">很遗憾，你答错了。再试一次吧！</p>
+                        <button id="try-again-btn" class="bg-treasure-brown hover:bg-brown-700 text-white font-bold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 mt-6">
+                            <i class="fa fa-undo mr-2"></i>再试一次
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：日志区域 -->
+            <div>
+                <div class="bg-white rounded-xl shadow-lg h-[500px] flex flex-col">
+                    <div class="bg-treasure-brown text-white p-4">
+                        <h3 class="text-xl font-bold">
+                            <i class="fa fa-book mr-2"></i>探险日志
+                        </h3>
+                    </div>
+                    <div id="log-container" class="flex-1 p-4 overflow-y-auto text-sm">
+                        <p class="text-gray-500 italic">探险日志将在这里显示...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-treasure-brown text-white py-6 px-4 mt-12">
+        <div class="container mx-auto text-center">
+            <p>乘法寻宝大冒险 &copy; 2025</p>
+            <p class="mt-2 text-sm">通过解决100以内的乘法问题，体验寻宝的乐趣！</p>
+        </div>
+    </footer>
+
+    <script>
+        // 乘法寻宝游戏类
+        class MathTreasureHunt {
+            constructor() {
+                // 游戏状态
+                this.currentStep = 0;
+                this.questions = [];
+                this.answers = [];
+                
+                // DOM元素
+                this.startBtn = document.getElementById('start-btn');
+                this.restartBtn = document.getElementById('restart-btn');
+                this.tryAgainBtn = document.getElementById('try-again-btn');
+                this.submitBtns = [
+                    document.getElementById('submit-1'),
+                    document.getElementById('submit-2'),
+                    document.getElementById('submit-3')
+                ];
+                this.answerInputs = [
+                    document.getElementById('answer-1'),
+                    document.getElementById('answer-2'),
+                    document.getElementById('answer-3')
+                ];
+                this.questionElements = [
+                    document.getElementById('question-1'),
+                    document.getElementById('question-2'),
+                    document.getElementById('question-3')
+                ];
+                this.scenes = [
+                    document.getElementById('scene-1'),
+                    document.getElementById('scene-2'),
+                    document.getElementById('scene-3')
+                ];
+                this.startScreen = document.getElementById('start-screen');
+                this.treasureScene = document.getElementById('treasure-scene');
+                this.failureScene = document.getElementById('failure-scene');
+                this.statusText = document.getElementById('status-text');
+                this.progressBar = document.getElementById('progress-bar');
+                this.logContainer = document.getElementById('log-container');
+                
+                // 绑定事件
+                this.bindEvents();
+            }
+            
+            // 绑定事件处理函数
+            bindEvents() {
+                this.startBtn.addEventListener('click', () => this.startAdventure());
+                this.restartBtn.addEventListener('click', () => this.resetGame());
+                this.tryAgainBtn.addEventListener('click', () => this.resetGame());
+                
+                // 绑定提交答案按钮事件
+                this.submitBtns.forEach((btn, index) => {
+                    btn.addEventListener('click', () => this.checkAnswer(index));
+                    // 支持回车键提交答案
+                    this.answerInputs[index].addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            this.checkAnswer(index);
+                        }
+                    });
+                });
+            }
+            
+            // 生成100以内的乘法问题
+            generateMultiplicationQuestion() {
+                const a = Math.floor(Math.random() * 10) + 1; // 1-10
+                const b = Math.floor(Math.random() * 10) + 1; // 1-10
+                return {
+                    question: `${a} × ${b} = ?`,
+                    answer: a * b
+                };
+            }
+            
+            // 记录日志
+            log(message) {
+                const logEntry = document.createElement('p');
+                logEntry.innerHTML = `<span class="text-gray-500">[${new Date().toLocaleTimeString()}]</span> ${message}`;
+                this.logContainer.appendChild(logEntry);
+                this.logContainer.scrollTop = this.logContainer.scrollHeight;
+            }
+            
+            // 更新状态文本
+            updateStatus(text) {
+                this.statusText.textContent = text;
+                this.log(text);
+            }
+            
+            // 更新进度条
+            updateProgress(percent) {
+                this.progressBar.style.width = `${percent}%`;
+            }
+            
+            // 显示场景，隐藏其他场景
+            showScene(sceneElement) {
+                // 隐藏所有场景
+                this.startScreen.classList.add('hidden');
+                this.treasureScene.classList.add('hidden');
+                this.failureScene.classList.add('hidden');
+                this.scenes.forEach(scene => scene.classList.add('hidden'));
+                
+                // 显示指定场景
+                sceneElement.classList.remove('hidden');
+            }
+            
+            // 开始探险
+            startAdventure() {
+                this.updateStatus('开始寻宝之旅！');
+                this.updateProgress(0);
+                this.startBtn.disabled = true;
+                this.startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                
+                // 生成三个乘法问题
+                this.questions = [];
+                this.answers = [];
+                for (let i = 0; i < 3; i++) {
+                    const { question, answer } = this.generateMultiplicationQuestion();
+                    this.questions.push(question);
+                    this.answers.push(answer);
+                    this.questionElements[i].textContent = question;
+                }
+                
+                // 开始第一个任务
+                this.startFirstClue();
+            }
+            
+            // 第一个线索：进入森林
+            startFirstClue() {
+                this.currentStep = 0;
+                this.updateStatus('进入了神秘森林，寻找第一个线索...');
+                
+                // 模拟异步操作
+                this.delay(1500)
+                    .then(() => {
+                        this.updateProgress(25);
+                        this.updateStatus('在森林中发现了刻有乘法题的石碑');
+                        this.showScene(this.scenes[0]);
+                        this.answerInputs[0].focus();
+                    });
+            }
+            
+            // 检查答案
+            checkAnswer(step) {
+                const userAnswer = parseInt(this.answerInputs[step].value);
+                
+                if (isNaN(userAnswer)) {
+                    this.updateStatus('请输入一个数字作为答案');
+                    return;
+                }
+                
+                this.updateStatus('正在验证答案...');
+                
+                // 模拟验证过程
+                this.delay(1000)
+                    .then(() => {
+                        if (userAnswer === this.answers[step]) {
+                            this.correctAnswer(step);
+                        } else {
+                            this.wrongAnswer();
+                        }
+                    });
+            }
+            
+            // 答案正确
+            correctAnswer(step) {
+                this.updateStatus('答案正确！继续前进...');
+                
+                // 禁用当前步骤的输入和按钮
+                this.answerInputs[step].disabled = true;
+                this.submitBtns[step].disabled = true;
+                this.answerInputs[step].classList.add('bg-green-100', 'border', 'border-green-500');
+                
+                // 延迟后进入下一步
+                this.delay(1500)
+                    .then(() => {
+                        if (step < 2) {
+                            this.nextStep(step + 1);
+                        } else {
+                            this.findTreasure();
+                        }
+                    });
+            }
+            
+            // 答案错误
+            wrongAnswer() {
+                this.updateStatus('答案错误！探险失败...');
+                this.showScene(this.failureScene);
+            }
+            
+            // 进入下一步
+            nextStep(step) {
+                this.currentStep = step;
+                this.updateProgress(25 + step * 25);
+                
+                const locations = ['古老城堡', '神秘洞穴'];
+                const clues = [
+                    '通过了森林，来到了一座古老城堡',
+                    '进入城堡的密道，发现了一个神秘洞穴'
+                ];
+                
+                this.updateStatus(clues[step - 1]);
+                
+                // 延迟后显示下一个场景
+                this.delay(1500)
+                    .then(() => {
+                        this.showScene(this.scenes[step]);
+                        this.answerInputs[step].focus();
+                    });
+            }
+            
+            // 找到宝藏
+            findTreasure() {
+                this.updateProgress(100);
+                this.updateStatus('解开了所有谜题，找到了宝藏！');
+                
+                // 延迟后显示宝藏场景
+                this.delay(2000)
+                    .then(() => {
+                        this.showScene(this.treasureScene);
+                    });
+            }
+            
+            // 重置游戏
+            resetGame() {
+                this.currentStep = 0;
+                this.updateStatus('准备开始新的探险...');
+                this.updateProgress(0);
+                this.startBtn.disabled = false;
+                this.startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                
+                // 重置输入框
+                this.answerInputs.forEach(input => {
+                    input.value = '';
+                    input.disabled = false;
+                    input.classList.remove('bg-green-100', 'border', 'border-green-500');
+                });
+                
+                // 重置按钮
+                this.submitBtns.forEach(btn => {
+                    btn.disabled = false;
+                });
+                
+                // 显示开始界面
+                this.showScene(this.startScreen);
+            }
+            
+            // 延迟函数，返回Promise
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+        }
+        
+        // 初始化游戏
+        document.addEventListener('DOMContentLoaded', () => {
+            const game = new MathTreasureHunt();
+        });
+    </script>
+</body>
+</html>
